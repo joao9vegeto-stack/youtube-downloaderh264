@@ -395,6 +395,144 @@ app.get("/health", (req, res) => {
 });
 
 // 404
+// PREPARE DOWNLOAD
+app.post("/prepare", async (req, res) => {
+
+  try {
+
+    const {
+      url,
+      height,
+      codec,
+      filename
+    } = req.body;
+
+    if(!url){
+
+      return res.status(400).json({
+        error:"URL inválida"
+      });
+
+    }
+
+    const id = String(Date.now());
+
+    const ext =
+      codec === "prores"
+      ? "mov"
+      : "mp4";
+
+    const output =
+      path.join(
+        os.tmpdir(),
+        `${id}.${ext}`
+      );
+
+    jobs[id] = {
+      status:"processing",
+      progress:100,
+      file:output,
+      filename
+    };
+
+    res.json({
+      jobId:id
+    });
+
+    const format =
+      `bestvideo[height<=${height}]+bestaudio/best`;
+
+    const args = [
+      "-f",
+      format,
+      "--merge-output-format",
+      "mp4",
+      "-o",
+      output,
+      url
+    ];
+
+    if(hasCookies()){
+
+      args.unshift(COOKIES_FILE);
+
+      args.unshift("--cookies");
+
+    }
+
+    const dl = spawn(
+      ytdlpBin,
+      args
+    );
+
+    dl.on("close", code => {
+
+      if(code !== 0){
+
+        jobs[id].status = "error";
+
+        jobs[id].message =
+          "Erro no download";
+
+        return;
+
+      }
+
+      jobs[id].status = "ready";
+
+    });
+
+  } catch(e){
+
+    res.status(500).json({
+      error:e.message
+    });
+
+  }
+
+});
+
+// STATUS
+app.get("/status", (req, res) => {
+
+  const job = jobs[req.query.id];
+
+  if(!job){
+
+    return res.status(404).json({
+      error:"Job não encontrado"
+    });
+
+  }
+
+  res.json(job);
+
+});
+
+// FILE
+app.get("/file", (req, res) => {
+
+  const { id } = req.query;
+
+  const job = jobs[id];
+
+  if(
+    !job ||
+    job.status !== "ready"
+  ){
+
+    return res.status(404).json({
+      error:"Arquivo não encontrado"
+    });
+
+  }
+
+  res.download(
+    job.file,
+    job.filename
+  );
+
+});
 app.use((req, res) => {
   res.status(404).json({
     error: "Rota não encontrada",
