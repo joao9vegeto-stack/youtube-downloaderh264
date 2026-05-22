@@ -3,8 +3,14 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>YouTube → After Effects</title>
+
 <style>
-*{ box-sizing:border-box; margin:0; padding:0; }
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
 body{
   background:#0f0f0f;
   color:white;
@@ -13,8 +19,17 @@ body{
   max-width:620px;
   margin:0 auto;
 }
-h1{ font-size:22px; margin-bottom:4px; }
-.sub{ font-size:13px; color:#666; margin-bottom:18px; }
+
+h1{
+  font-size:22px;
+  margin-bottom:4px;
+}
+
+.sub{
+  font-size:13px;
+  color:#666;
+  margin-bottom:18px;
+}
 
 input{
   width:100%;
@@ -26,7 +41,10 @@ input{
   background:#1e1e1e;
   color:white;
 }
-input::placeholder{ color:#555; }
+
+input::placeholder{
+  color:#555;
+}
 
 #btn{
   width:100%;
@@ -40,9 +58,14 @@ input::placeholder{ color:#555; }
   cursor:pointer;
   margin-top:12px;
 }
-#btn:disabled{ background:#444; cursor:not-allowed; }
 
-/* ── Cookies panel ── */
+#btn:disabled{
+  background:#444;
+  cursor:not-allowed;
+}
+
+/* cookies */
+
 .cookies-panel{
   margin-top:14px;
   background:#1a1a1a;
@@ -50,37 +73,54 @@ input::placeholder{ color:#555; }
   overflow:hidden;
   border:1px solid #2a2a2a;
 }
+
 .cookies-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding:12px 16px;
   cursor:pointer;
-  user-select:none;
   font-size:13px;
   color:#888;
 }
-.cookies-header:hover{ color:#bbb; }
+
 .cookies-header .tag{
   font-size:11px;
   padding:2px 8px;
   border-radius:99px;
   font-weight:bold;
 }
-.tag.ok{ background:#00aa5533; color:#00cc66; }
-.tag.missing{ background:#ff330022; color:#ff4444; }
+
+.tag.ok{
+  background:#00aa5533;
+  color:#00cc66;
+}
+
+.tag.missing{
+  background:#ff330022;
+  color:#ff4444;
+}
+
 .cookies-body{
   display:none;
   padding:0 16px 16px;
 }
-.cookies-body.open{ display:block; }
+
+.cookies-body.open{
+  display:block;
+}
+
 .cookies-body p{
   font-size:12px;
   color:#666;
   margin-bottom:8px;
   line-height:1.6;
 }
-.cookies-body a{ color:#4a9eff; }
+
+.cookies-body a{
+  color:#4a9eff;
+}
+
 textarea{
   width:100%;
   height:110px;
@@ -93,6 +133,7 @@ textarea{
   padding:10px;
   resize:vertical;
 }
+
 .cookies-body button{
   margin-top:8px;
   padding:9px 18px;
@@ -104,20 +145,36 @@ textarea{
   font-weight:bold;
   cursor:pointer;
 }
-.cookies-body button:disabled{ background:#333; color:#666; cursor:not-allowed; }
-.cookies-save-msg{ font-size:12px; margin-top:6px; }
 
-/* ── Card ── */
+.cookies-save-msg{
+  font-size:12px;
+  margin-top:6px;
+}
+
+/* card */
+
 .card{
   background:#1a1a1a;
   border-radius:14px;
   margin-top:20px;
   overflow:hidden;
 }
-.thumb-wrap{ width:100%; background:#000; position:relative; }
-.thumb-wrap img{ width:100%; display:block; max-height:300px; object-fit:cover; }
-.card-body{ padding:16px; }
-.title{ font-size:14px; line-height:1.5; color:#bbb; margin-bottom:14px; }
+
+.thumb-wrap img{
+  width:100%;
+  display:block;
+}
+
+.card-body{
+  padding:16px;
+}
+
+.title{
+  font-size:14px;
+  line-height:1.5;
+  color:#bbb;
+  margin-bottom:14px;
+}
 
 .codec-info{
   background:#111;
@@ -129,7 +186,13 @@ textarea{
   color:#777;
   line-height:1.9;
 }
-.codec-info strong{ color:#00cc66; display:block; margin-bottom:3px; font-size:13px; }
+
+.codec-info strong{
+  color:#00cc66;
+  display:block;
+  margin-bottom:3px;
+  font-size:13px;
+}
 
 .group-label{
   font-size:11px;
@@ -152,11 +215,15 @@ textarea{
   font-size:15px;
   font-weight:bold;
   cursor:pointer;
-  transition:opacity 0.15s;
 }
-.btn-dl:disabled{ opacity:0.5; cursor:not-allowed; }
-.btn-dl.h264{ background:#00aa55; }
-.btn-dl.prores{ background:#7b3ff2; }
+
+.btn-dl.h264{
+  background:#00aa55;
+}
+
+.btn-dl.prores{
+  background:#7b3ff2;
+}
 
 .badge{
   font-size:11px;
@@ -164,10 +231,10 @@ textarea{
   background:#ffffff22;
   padding:2px 8px;
   border-radius:5px;
-  white-space:nowrap;
 }
 
-/* ── Progress modal ── */
+/* modal */
+
 #modal{
   display:none;
   position:fixed;
@@ -178,7 +245,11 @@ textarea{
   justify-content:center;
   padding:30px;
 }
-#modal.show{ display:flex; }
+
+#modal.show{
+  display:flex;
+}
+
 .modal-box{
   background:#1e1e1e;
   border-radius:16px;
@@ -187,66 +258,72 @@ textarea{
   max-width:360px;
   text-align:center;
 }
-.modal-box h3{ font-size:17px; margin-bottom:8px; }
-.modal-box p{ font-size:13px; color:#888; margin-bottom:20px; }
+
 .progress-bar-bg{
   background:#333;
   border-radius:99px;
   height:8px;
   overflow:hidden;
-  margin-bottom:16px;
-}
-.progress-bar{
-  height:100%;
-  border-radius:99px;
-  width:0%;
-  transition:width 0.4s;
-}
-.progress-bar.h264{ background:#00aa55; }
-.progress-bar.prores{ background:#7b3ff2; }
-.progress-status{ font-size:13px; color:#aaa; margin-bottom:20px; }
-#modal-cancel{
-  background:transparent;
-  border:1px solid #555;
-  color:#aaa;
-  padding:9px 20px;
-  border-radius:8px;
-  font-size:14px;
-  cursor:pointer;
+  margin:18px 0;
 }
 
-.msg{ margin-top:14px; color:#888; font-size:14px; }
-.erro{ margin-top:14px; color:#ff4444; font-size:14px; }
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:#00aa55;
+}
+
+.msg{
+  margin-top:14px;
+  color:#888;
+}
+
+.erro{
+  margin-top:14px;
+  color:#ff4444;
+}
 </style>
 </head>
+
 <body>
 
 <h1>YouTube → After Effects</h1>
-<p class="sub">Converte para MP4 H264 ou ProRes otimizado para edição</p>
+
+<p class="sub">
+Converte para MP4 H264 ou ProRes otimizado para edição
+</p>
 
 <input id="url" placeholder="Cole o link do YouTube">
-<button id="btn" onclick="buscar()">Buscar Vídeo</button>
 
-<!-- Cookies -->
+<button id="btn" onclick="buscar()">
+Buscar Vídeo
+</button>
+
 <div class="cookies-panel">
 
   <div class="cookies-header" onclick="toggleCookies()">
+
     <span>Cookies do YouTube</span>
+
     <span id="cookies-tag" class="tag missing">
       Não configurado
     </span>
+
   </div>
 
   <div class="cookies-body" id="cookies-body">
 
     <p>
-      O YouTube exige autenticação em servidores cloud.
-      Exporte seus cookies usando a extensão:
+      Exporte seus cookies usando:
       <br><br>
-      <a href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/gihmafigllmhbppdfjnfecimiohcljba"
-         target="_blank">
-         Get cookies.txt LOCALLY
+
+      <a
+        href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/gihmafigllmhbppdfjnfecimiohcljba"
+        target="_blank"
+      >
+        Get cookies.txt LOCALLY
       </a>
+
     </p>
 
     <textarea
@@ -254,260 +331,374 @@ textarea{
       placeholder="Cole aqui o conteúdo completo do cookies.txt"
     ></textarea>
 
-    <button id="cookies-save-btn" onclick="saveCookies()">
+    <button onclick="saveCookies()">
       Salvar Cookies
     </button>
 
-    <div class="cookies-save-msg" id="cookies-save-msg"></div>
+    <div
+      class="cookies-save-msg"
+      id="cookies-save-msg"
+    ></div>
 
   </div>
 
 </div>
-
 
 <div id="resultado"></div>
 
-<!-- Progress modal -->
 <div id="modal">
+
   <div class="modal-box">
-    <h3 id="modal-title">Preparando download…</h3>
-    <p id="modal-desc">Isso pode levar alguns minutos</p>
+
+    <h3 id="modal-title">
+      Preparando download...
+    </h3>
+
     <div class="progress-bar-bg">
       <div class="progress-bar" id="modal-bar"></div>
     </div>
-    <div class="progress-status" id="modal-status">Iniciando…</div>
-    <button id="modal-cancel" onclick="cancelJob()">Cancelar</button>
+
+    <div id="modal-status">
+      Processando...
+    </div>
+
   </div>
+
 </div>
 
 <script>
-let currentJobId = null;
-let pollInterval = null;
 
-// Check cookies status on load
+let currentJobId = null;
+
 window.addEventListener("load", async () => {
+
   try {
+
     const r = await fetch("/cookies-status");
+
     const d = await r.json();
+
     setCookiesTag(d.configured);
+
   } catch(_) {}
+
 });
 
-function setCookiesTag(configured) {
-  const tag = document.getElementById("cookies-tag");
-  if (configured) {
+function setCookiesTag(configured){
+
+  const tag =
+    document.getElementById("cookies-tag");
+
+  if(configured){
+
     tag.textContent = "✓ Configurado";
+
     tag.className = "tag ok";
+
   } else {
+
     tag.textContent = "Não configurado";
+
     tag.className = "tag missing";
-  }
-}
 
-function toggleCookies() {
-  const body = document.getElementById("cookies-body");
-  body.classList.toggle("open");
-}
-
-async function saveCookies() {
-  const content = document.getElementById("cookies-input").value.trim();
-  const btn = document.getElementById("cookies-save-btn");
-  const msg = document.getElementById("cookies-save-msg");
-
-  if (!content || content.length < 50) {
-    msg.style.color = "#ff4444";
-    msg.textContent = "Cole o conteúdo completo do arquivo cookies.txt";
-    return;
   }
 
-  btn.disabled = true;
-  btn.textContent = "Salvando…";
-  msg.textContent = "";
+}
+
+function toggleCookies(){
+
+  document
+    .getElementById("cookies-body")
+    .classList
+    .toggle("open");
+
+}
+
+async function saveCookies(){
+
+  const content =
+    document.getElementById("cookies-input")
+    .value
+    .trim();
+
+  const msg =
+    document.getElementById("cookies-save-msg");
 
   try {
+
     const r = await fetch("/cookies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content })
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        content
+      })
+
     });
+
     const d = await r.json();
-    if (d.ok) {
+
+    if(d.ok){
+
       msg.style.color = "#00cc66";
-      msg.textContent = "✓ Cookies salvos com sucesso!";
+
+      msg.textContent =
+        "✓ Cookies salvos";
+
       setCookiesTag(true);
-      document.getElementById("cookies-input").value = "";
-      setTimeout(() => {
-        document.getElementById("cookies-body").classList.remove("open");
-      }, 1500);
+
     } else {
+
       msg.style.color = "#ff4444";
-      msg.textContent = d.error || "Erro ao salvar";
+
+      msg.textContent =
+        d.error;
+
     }
-  } catch(_) {
+
+  } catch(e){
+
     msg.style.color = "#ff4444";
-    msg.textContent = "Erro de conexão";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Salvar Cookies";
+
+    msg.textContent =
+      "Erro";
+
   }
+
 }
 
 async function buscar(){
-  const url = document.getElementById("url").value.trim();
-  const resultado = document.getElementById("resultado");
-  const btn = document.getElementById("btn");
 
-  if(!url){ resultado.innerHTML='<p class="erro">Cole um link válido do YouTube.</p>'; return; }
+  const url =
+    document.getElementById("url")
+    .value
+    .trim();
 
-  btn.disabled = true;
-  btn.textContent = "Buscando...";
-  resultado.innerHTML = '<p class="msg">Carregando informações do vídeo…</p>';
+  const resultado =
+    document.getElementById("resultado");
+
+  if(!url){
+
+    resultado.innerHTML =
+      '<p class="erro">Cole um link válido.</p>';
+
+    return;
+
+  }
+
+  resultado.innerHTML =
+    '<p class="msg">Buscando vídeo...</p>';
 
   try {
+
     const req = await fetch("/video", {
+
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({url})
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        url
+      })
+
     });
+
     const data = await req.json();
 
-    if(data.error){ resultado.innerHTML=`<p class="erro">${data.error}</p>`; return; }
-    if(!data.qualities||data.qualities.length===0){
-      resultado.innerHTML=`<div class="card"><div class="card-body"><p class="title">${data.title}</p><p class="erro">Nenhuma qualidade disponível.</p></div></div>`;
+    if(data.error){
+
+      resultado.innerHTML =
+        `<p class="erro">${data.error}</p>`;
+
       return;
+
     }
 
-    const h264 = data.qualities.filter(q=>q.codec==="h264");
-    const prores = data.qualities.filter(q=>q.codec==="prores");
+    let buttons = "";
 
-    let btns = "";
-    if(h264.length){
-      btns += '<div class="group-label">MP4 — H264 (leve, compatível)</div>';
-      h264.forEach(q=>{
-        btns += `<button class="btn-dl h264" onclick="startDownload('${encodeURIComponent(data.videoUrl)}','${q.height}','h264','${encodeURIComponent(q.filename)}','H264 ${q.height}p')">
-          <span>⬇ Baixar ${q.height}p MP4</span>
-          <span class="badge">H264 · CFR 30fps · AAC</span>
-        </button>`;
-      });
-    }
-    if(prores.length){
-      btns += '<div class="group-label">MOV — ProRes (profissional, arquivo maior)</div>';
-      prores.forEach(q=>{
-        btns += `<button class="btn-dl prores" onclick="startDownload('${encodeURIComponent(data.videoUrl)}','${q.height}','prores','${encodeURIComponent(q.filename)}','ProRes ${q.height}p')">
-          <span>⬇ Baixar ${q.height}p ProRes</span>
-          <span class="badge">ProRes 422 HQ · PCM</span>
-        </button>`;
-      });
-    }
+    data.qualities.forEach(q => {
 
-    const thumbHtml = data.thumbnail
-      ? `<div class="thumb-wrap"><img src="${data.thumbnail}" alt="thumbnail"></div>`
-      : "";
+      buttons += `
+      <button
+        class="btn-dl ${q.codec}"
+        onclick="baixar(
+          '${data.videoUrl}',
+          ${q.height},
+          '${q.codec}',
+          '${q.filename}'
+        )"
+      >
+
+        <span>
+          ${q.height}p ${q.codec.toUpperCase()}
+        </span>
+
+        <span class="badge">
+          ${q.codec === 'prores' ? 'MOV' : 'MP4'}
+        </span>
+
+      </button>
+      `;
+
+    });
 
     resultado.innerHTML = `
       <div class="card">
-        ${thumbHtml}
-        <div class="card-body">
-          <p class="title">${data.title}</p>
-          <div class="codec-info">
-            <strong>Otimizado para Adobe After Effects</strong>
-            ✅ H264 / ProRes &nbsp;·&nbsp; ✅ CFR 30fps &nbsp;·&nbsp; ✅ yuv420p &nbsp;·&nbsp; ✅ AAC / PCM &nbsp;·&nbsp; ✅ GOP curto
-          </div>
-          ${btns}
-        </div>
-      </div>`;
 
-  } catch(e) {
-    resultado.innerHTML = '<p class="erro">Erro de conexão com o servidor.</p>';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Buscar Vídeo";
+        <div class="thumb-wrap">
+          <img src="${data.thumbnail}">
+        </div>
+
+        <div class="card-body">
+
+          <p class="title">
+            ${data.title}
+          </p>
+
+          <div class="codec-info">
+            <strong>
+              Otimizado para After Effects
+            </strong>
+
+            H264 / ProRes
+          </div>
+
+          ${buttons}
+
+        </div>
+
+      </div>
+    `;
+
+  } catch(e){
+
+    resultado.innerHTML =
+      '<p class="erro">Erro de conexão.</p>';
+
   }
+
 }
 
-async function startDownload(encUrl, height, codec, encFilename, label){
-  const url = decodeURIComponent(encUrl);
-  const filename = decodeURIComponent(encFilename);
+async function baixar(
+  url,
+  height,
+  codec,
+  filename
+){
 
-  document.getElementById("modal-title").textContent = `Preparando ${label}…`;
-  document.getElementById("modal-desc").textContent = "Baixando e convertendo. Não feche esta página.";
-  document.getElementById("modal-bar").className = `progress-bar ${codec}`;
-  document.getElementById("modal-status").textContent = "Iniciando…";
-  document.getElementById("modal-bar").style.width = "0%";
-  document.getElementById("modal").classList.add("show");
+  document
+    .getElementById("modal")
+    .classList
+    .add("show");
 
   try {
-    const res = await fetch("/prepare", {
+
+    const r = await fetch("/prepare", {
+
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ url, height, codec, filename })
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        url,
+        height,
+        codec,
+        filename
+      })
+
     });
-    const data = await res.json();
-    if(data.error){ showError(data.error); return; }
 
-    currentJobId = data.jobId;
-    startPolling(filename);
-  } catch(e) {
-    showError("Erro ao iniciar o download.");
+    const d = await r.json();
+
+    if(d.error){
+
+      alert(d.error);
+
+      return;
+
+    }
+
+    currentJobId = d.jobId;
+
+    pollStatus();
+
+  } catch(e){
+
+    alert("Erro no download");
+
   }
+
 }
 
-function startPolling(filename){
-  clearInterval(pollInterval);
+async function pollStatus(){
 
-  pollInterval = setInterval(async () => {
-    if(!currentJobId) return;
-    try {
-      const res = await fetch(`/status?id=${currentJobId}`);
-      const data = await res.json();
+  const status =
+    document.getElementById("modal-status");
 
-      if(data.progress > 0) setBar(data.progress);
-      document.getElementById("modal-status").textContent = data.message || "Processando…";
+  const bar =
+    document.getElementById("modal-bar");
 
-      if(data.status === "ready"){
-        clearInterval(pollInterval);
-        setBar(100);
-        document.getElementById("modal-status").textContent = "Concluído! Iniciando download…";
-        setTimeout(()=>{
-          const a = document.createElement("a");
-          a.href = `/file?id=${currentJobId}`;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(closeModal, 2000);
-        }, 500);
-      } else if(data.status === "error"){
-        clearInterval(pollInterval);
-        showError(data.message || "Erro desconhecido.");
-      }
-    } catch(e) {}
+  const interval = setInterval(async () => {
+
+    const r =
+      await fetch(
+        `/status?id=${currentJobId}`
+      );
+
+    const d = await r.json();
+
+    if(d.progress){
+
+      bar.style.width =
+        d.progress + "%";
+
+    }
+
+    status.textContent =
+      d.message || "Processando...";
+
+    if(d.status === "ready"){
+
+      clearInterval(interval);
+
+      window.location =
+        `/file?id=${currentJobId}`;
+
+      setTimeout(() => {
+
+        document
+          .getElementById("modal")
+          .classList
+          .remove("show");
+
+      }, 2000);
+
+    }
+
+    if(d.status === "error"){
+
+      clearInterval(interval);
+
+      alert(
+        d.message ||
+        "Erro"
+      );
+
+    }
+
   }, 2000);
+
 }
 
-function setBar(pct){
-  document.getElementById("modal-bar").style.width = pct + "%";
-}
-
-function showError(msg){
-  closeModal();
-  document.getElementById("resultado").insertAdjacentHTML("afterbegin", `<p class="erro">${msg}</p>`);
-}
-
-function cancelJob(){
-  currentJobId = null;
-  clearInterval(pollInterval);
-  closeModal();
-}
-
-function closeModal(){
-  document.getElementById("modal").classList.remove("show");
-  currentJobId = null;
-}
-
-document.getElementById("url").addEventListener("keydown", e => {
-  if(e.key==="Enter") buscar();
-});
 </script>
+
 </body>
 </html>
