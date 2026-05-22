@@ -11,10 +11,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// Railway / Proxy fix
 app.set("trust proxy", 1);
 
-// Cache control
+// Cache
 app.use((req, res, next) => {
   if (req.path === "/" || req.path.endsWith(".html")) {
     res.setHeader("Cache-Control", "no-store");
@@ -22,15 +21,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Pasta public
+// PUBLIC
 const publicPath = path.join(__dirname, "public");
+
 app.use(express.static(publicPath));
 
-// ROTA PRINCIPAL (ESSENCIAL)
+// HOME
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
+// yt-dlp binary
 const ytdlpBin = path.join(
   __dirname,
   "node_modules",
@@ -40,19 +41,22 @@ const ytdlpBin = path.join(
 );
 
 const TIERS = [1080, 720];
+
 const jobs = {};
+
 const COOKIES_FILE = path.join(os.tmpdir(), "yt_cookies.txt");
 
-// Cleanup temp files
+// CLEAN TMP
 try {
   fs.readdirSync(os.tmpdir())
     .filter((f) => f.startsWith("ytdl_"))
     .forEach((f) => fs.unlinkSync(path.join(os.tmpdir(), f)));
 } catch (_) {}
 
-// Helpers
+// HELPERS
 function hmsToSec(hms) {
   if (!hms) return 0;
+
   const parts = hms.split(":").map(parseFloat);
 
   if (parts.length === 3) {
@@ -68,12 +72,17 @@ function hmsToSec(hms) {
 
 function fmtEta(secs) {
   if (!secs || secs <= 0) return null;
-  if (secs < 60) return `~${Math.round(secs)}s restantes`;
+
+  if (secs < 60) {
+    return `~${Math.round(secs)}s restantes`;
+  }
+
   return `~${Math.round(secs / 60)}min restantes`;
 }
 
 function cleanJob(id) {
   const job = jobs[id];
+
   if (!job) return;
 
   if (job.rawFile && fs.existsSync(job.rawFile)) {
@@ -109,7 +118,7 @@ function ytdlpArgs(extra = []) {
   return base;
 }
 
-// Auto clean
+// AUTO CLEAN
 setInterval(() => {
   const now = Date.now();
 
@@ -120,26 +129,36 @@ setInterval(() => {
   });
 }, 2 * 60 * 1000);
 
-// Cookies
+// COOKIES
 app.post("/cookies", (req, res) => {
   const { content } = req.body;
 
   if (!content || content.trim().length < 50) {
-    return res
-      .status(400)
-      .json({ error: "Conteúdo de cookies inválido" });
+    return res.status(400).json({
+      error: "Conteúdo de cookies inválido",
+    });
   }
 
   try {
     fs.writeFileSync(COOKIES_FILE, content.trim(), "utf8");
-    res.json({ ok: true });
+
+    console.log("[cookies] salvo");
+
+    res.json({
+      ok: true,
+    });
   } catch (e) {
-    res.status(500).json({ error: "Erro ao salvar cookies" });
+    res.status(500).json({
+      error: "Erro ao salvar cookies",
+    });
   }
 });
 
+// COOKIE STATUS
 app.get("/cookies-status", (req, res) => {
-  res.json({ configured: hasCookies() });
+  res.json({
+    configured: hasCookies(),
+  });
 });
 
 // VIDEO INFO
@@ -153,8 +172,18 @@ app.post("/video", async (req, res) => {
       });
     }
 
+    const nodeBin = process.execPath;
+
     const args = {
       dumpSingleJson: true,
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferFreeFormats: true,
+      addHeader: [
+        "referer:youtube.com",
+        "user-agent:Mozilla/5.0"
+      ],
+      jsRuntimes: `node:${nodeBin}`
     };
 
     if (hasCookies()) {
@@ -164,15 +193,25 @@ app.post("/video", async (req, res) => {
     const info = await ytdlp(url, args);
 
     const videoFormats = info.formats.filter(
-      (f) => f.vcodec && f.vcodec !== "none" && f.height
+      (f) =>
+        f.vcodec &&
+        f.vcodec !== "none" &&
+        f.height
     );
 
-    const baseName = info.title.replace(/[^a-z0-9]/gi, "_");
+    const baseName = info.title.replace(
+      /[^a-z0-9]/gi,
+      "_"
+    );
 
     const qualities = [];
 
     for (const tier of TIERS) {
-      if (videoFormats.some((f) => f.height >= tier * 0.94)) {
+      if (
+        videoFormats.some(
+          (f) => f.height >= tier * 0.94
+        )
+      ) {
         qualities.push({
           height: tier,
           codec: "h264",
@@ -197,7 +236,7 @@ app.post("/video", async (req, res) => {
     console.error(e);
 
     res.status(500).json({
-      error: "Erro ao buscar vídeo",
+      error: "Erro ao buscar vídeo: " + e.message,
     });
   }
 });
@@ -220,7 +259,7 @@ app.get("/status", (req, res) => {
   });
 });
 
-// HEALTHCHECK
+// HEALTH
 app.get("/health", (req, res) => {
   res.json({
     online: true,
