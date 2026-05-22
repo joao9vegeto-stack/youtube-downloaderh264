@@ -1,546 +1,704 @@
-const express = require("express");
-const cors = require("cors");
-const ytdlp = require("yt-dlp-exec");
-const { spawn } = require("child_process");
-const path = require("path");
-const fs = require("fs");
-const os = require("os");
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube → After Effects</title>
 
-const app = express();
-
-app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-
-app.set("trust proxy", 1);
-
-// Cache
-app.use((req, res, next) => {
-  if (req.path === "/" || req.path.endsWith(".html")) {
-    res.setHeader("Cache-Control", "no-store");
-  }
-  next();
-});
-
-// PUBLIC
-const publicPath = path.join(__dirname, "public");
-
-app.use(express.static(publicPath));
-
-// HOME
-app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
-});
-
-// yt-dlp binary
-const ytdlpBin = path.join(
-  __dirname,
-  "node_modules",
-  "yt-dlp-exec",
-  "bin",
-  "yt-dlp"
-);
-
-const TIERS = [1080, 720];
-
-const jobs = {};
-
-const COOKIES_FILE = path.join(os.tmpdir(), "yt_cookies.txt");
-
-// CLEAN TMP
-try {
-  fs.readdirSync(os.tmpdir())
-    .filter((f) => f.startsWith("ytdl_"))
-    .forEach((f) => fs.unlinkSync(path.join(os.tmpdir(), f)));
-} catch (_) {}
-
-// HELPERS
-function hmsToSec(hms) {
-  if (!hms) return 0;
-
-  const parts = hms.split(":").map(parseFloat);
-
-  if (parts.length === 3) {
-    return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  }
-
-  if (parts.length === 2) {
-    return parts[0] * 60 + parts[1];
-  }
-
-  return 0;
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
 }
 
-function fmtEta(secs) {
-  if (!secs || secs <= 0) return null;
-
-  if (secs < 60) {
-    return `~${Math.round(secs)}s restantes`;
-  }
-
-  return `~${Math.round(secs / 60)}min restantes`;
+body{
+  background:#0f0f0f;
+  color:white;
+  font-family:Arial;
+  padding:20px;
+  max-width:620px;
+  margin:0 auto;
 }
 
-function cleanJob(id) {
-  const job = jobs[id];
-
-  if (!job) return;
-
-  if (job.rawFile && fs.existsSync(job.rawFile)) {
-    fs.unlink(job.rawFile, () => {});
-  }
-
-  if (job.outFile && fs.existsSync(job.outFile)) {
-    fs.unlink(job.outFile, () => {});
-  }
-
-  delete jobs[id];
+h1{
+  font-size:22px;
+  margin-bottom:4px;
 }
 
-function hasCookies() {
+.sub{
+  font-size:13px;
+  color:#666;
+  margin-bottom:18px;
+}
+
+input{
+  width:100%;
+  padding:14px 16px;
+  border:none;
+  border-radius:12px;
+  margin-top:10px;
+  font-size:15px;
+  background:#1e1e1e;
+  color:white;
+}
+
+input::placeholder{
+  color:#555;
+}
+
+#btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  background:#ff0033;
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:12px;
+}
+
+#btn:disabled{
+  background:#444;
+  cursor:not-allowed;
+}
+
+/* cookies */
+
+.cookies-panel{
+  margin-top:14px;
+  background:#1a1a1a;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid #2a2a2a;
+}
+
+.cookies-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 16px;
+  cursor:pointer;
+  font-size:13px;
+  color:#888;
+}
+
+.cookies-header .tag{
+  font-size:11px;
+  padding:2px 8px;
+  border-radius:99px;
+  font-weight:bold;
+}
+
+.tag.ok{
+  background:#00aa5533;
+  color:#00cc66;
+}
+
+.tag.missing{
+  background:#ff330022;
+  color:#ff4444;
+}
+
+.cookies-body{
+  display:none;
+  padding:0 16px 16px;
+}
+
+.cookies-body.open{
+  display:block;
+}
+
+.cookies-body p{
+  font-size:12px;
+  color:#666;
+  margin-bottom:8px;
+  line-height:1.6;
+}
+
+.cookies-body a{
+  color:#4a9eff;
+}
+
+textarea{
+  width:100%;
+  height:110px;
+  background:#111;
+  border:1px solid #333;
+  border-radius:8px;
+  color:#ccc;
+  font-size:11px;
+  font-family:monospace;
+  padding:10px;
+  resize:vertical;
+}
+
+.cookies-body button{
+  margin-top:8px;
+  padding:9px 18px;
+  border:none;
+  border-radius:8px;
+  background:#4a9eff;
+  color:white;
+  font-size:13px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.cookies-save-msg{
+  font-size:12px;
+  margin-top:6px;
+}
+
+/* card */
+
+.card{
+  background:#1a1a1a;
+  border-radius:14px;
+  margin-top:20px;
+  overflow:hidden;
+}
+
+.thumb-wrap img{
+  width:100%;
+  display:block;
+}
+
+.card-body{
+  padding:16px;
+}
+
+.title{
+  font-size:14px;
+  line-height:1.5;
+  color:#bbb;
+  margin-bottom:14px;
+}
+
+.codec-info{
+  background:#111;
+  border:1px solid #2a2a2a;
+  border-radius:10px;
+  padding:11px 14px;
+  margin-bottom:14px;
+  font-size:12px;
+  color:#777;
+  line-height:1.9;
+}
+
+.codec-info strong{
+  color:#00cc66;
+  display:block;
+  margin-bottom:3px;
+  font-size:13px;
+}
+
+.group-label{
+  font-size:11px;
+  color:#555;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  margin:14px 0 7px;
+}
+
+.btn-dl{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  padding:13px 16px;
+  margin-bottom:8px;
+  border:none;
+  border-radius:10px;
+  color:white;
+  font-size:15px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.btn-dl.h264{
+  background:#00aa55;
+}
+
+.btn-dl.prores{
+  background:#7b3ff2;
+}
+
+.badge{
+  font-size:11px;
+  font-weight:normal;
+  background:#ffffff22;
+  padding:2px 8px;
+  border-radius:5px;
+}
+
+/* modal */
+
+#modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000000cc;
+  z-index:100;
+  align-items:center;
+  justify-content:center;
+  padding:30px;
+}
+
+#modal.show{
+  display:flex;
+}
+
+.modal-box{
+  background:#1e1e1e;
+  border-radius:16px;
+  padding:28px 24px;
+  width:100%;
+  max-width:360px;
+  text-align:center;
+}
+
+.progress-bar-bg{
+  background:#333;
+  border-radius:99px;
+  height:8px;
+  overflow:hidden;
+  margin:18px 0;
+}
+
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:#00aa55;
+}
+
+.msg{
+  margin-top:14px;
+  color:#888;
+}
+
+.erro{
+  margin-top:14px;
+  color:#ff4444;
+}
+</style>
+</head>
+
+<body>
+
+<h1>YouTube → After Effects</h1>
+
+<p class="sub">
+Converte para MP4 H264 ou ProRes otimizado para edição
+</p>
+
+<input id="url" placeholder="Cole o link do YouTube">
+
+<button id="btn" onclick="buscar()">
+Buscar Vídeo
+</button>
+
+<div class="cookies-panel">
+
+  <div class="cookies-header" onclick="toggleCookies()">
+
+    <span>Cookies do YouTube</span>
+
+    <span id="cookies-tag" class="tag missing">
+      Não configurado
+    </span>
+
+  </div>
+
+  <div class="cookies-body" id="cookies-body">
+
+    <p>
+      Exporte seus cookies usando:
+      <br><br>
+
+      <a
+        href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/gihmafigllmhbppdfjnfecimiohcljba"
+        target="_blank"
+      >
+        Get cookies.txt LOCALLY
+      </a>
+
+    </p>
+
+    <textarea
+      id="cookies-input"
+      placeholder="Cole aqui o conteúdo completo do cookies.txt"
+    ></textarea>
+
+    <button onclick="saveCookies()">
+      Salvar Cookies
+    </button>
+
+    <div
+      class="cookies-save-msg"
+      id="cookies-save-msg"
+    ></div>
+
+  </div>
+
+</div>
+
+<div id="resultado"></div>
+
+<div id="modal">
+
+  <div class="modal-box">
+
+    <h3 id="modal-title">
+      Preparando download...
+    </h3>
+
+    <div class="progress-bar-bg">
+      <div class="progress-bar" id="modal-bar"></div>
+    </div>
+
+    <div id="modal-status">
+      Processando...
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+let currentJobId = null;
+
+window.addEventListener("load", async () => {
+
   try {
-    return (
-      fs.existsSync(COOKIES_FILE) &&
-      fs.statSync(COOKIES_FILE).size > 100
-    );
-  } catch (_) {
-    return false;
+
+    const r = await fetch("/cookies-status");
+
+    const d = await r.json();
+
+    setCookiesTag(d.configured);
+
+  } catch(_) {}
+
+});
+
+function setCookiesTag(configured){
+
+  const tag =
+    document.getElementById("cookies-tag");
+
+  if(configured){
+
+    tag.textContent = "✓ Configurado";
+
+    tag.className = "tag ok";
+
+  } else {
+
+    tag.textContent = "Não configurado";
+
+    tag.className = "tag missing";
+
   }
+
 }
 
-function ytdlpArgs(extra = []) {
-  const base = [...extra];
+function toggleCookies(){
 
-  if (hasCookies()) {
-    base.push("--cookies", COOKIES_FILE);
-    console.log("[yt-dlp] usando cookies");
-  }
+  document
+    .getElementById("cookies-body")
+    .classList
+    .toggle("open");
 
-  return base;
 }
 
-// AUTO CLEAN
-setInterval(() => {
-  const now = Date.now();
+async function saveCookies(){
 
-  Object.keys(jobs).forEach((id) => {
-    if (now - Number(id) > 20 * 60 * 1000) {
-      cleanJob(id);
-    }
-  });
-}, 2 * 60 * 1000);
+  const content =
+    document.getElementById("cookies-input")
+    .value
+    .trim();
 
-// COOKIES
-app.post("/cookies", (req, res) => {
-  const { content } = req.body;
-
-  if (!content || content.trim().length < 50) {
-    return res.status(400).json({
-      error: "Conteúdo de cookies inválido",
-    });
-  }
-
-  try {
-    fs.writeFileSync(COOKIES_FILE, content.trim(), "utf8");
-
-    console.log("[cookies] salvo");
-
-    res.json({
-      ok: true,
-    });
-  } catch (e) {
-    res.status(500).json({
-      error: "Erro ao salvar cookies",
-    });
-  }
-});
-
-// COOKIE STATUS
-app.get("/cookies-status", (req, res) => {
-  res.json({
-    configured: hasCookies(),
-  });
-});
-
-// VIDEO INFO
-app.post("/video", async (req, res) => {
-  try {
-    const { url } = req.body;
-
-    if (!url) {
-      return res.status(400).json({
-        error: "URL inválida",
-      });
-    }
-
-    const nodeBin = process.execPath;
-
-    const args = {
-      dumpSingleJson: true,
-      noCheckCertificates: true,
-      noWarnings: true,
-      preferFreeFormats: true,
-      addHeader: [
-        "referer:youtube.com",
-        "user-agent:Mozilla/5.0"
-      ],
-      jsRuntimes: `node:${nodeBin}`
-    };
-
-    if (hasCookies()) {
-      args.cookies = COOKIES_FILE;
-    }
-
-    const info = await ytdlp(url, args);
-
-    const videoFormats = info.formats.filter(
-      (f) =>
-        f.vcodec &&
-        f.vcodec !== "none" &&
-        f.height
-    );
-
-    const baseName = info.title.replace(
-      /[^a-z0-9]/gi,
-      "_"
-    );
-
-    const qualities = [];
-
-    for (const tier of TIERS) {
-      if (
-        videoFormats.some(
-          (f) => f.height >= tier * 0.94
-        )
-      ) {
-        qualities.push({
-          height: tier,
-          codec: "h264",
-          filename: `${baseName}_${tier}p_H264.mp4`,
-        });
-
-        qualities.push({
-          height: tier,
-          codec: "prores",
-          filename: `${baseName}_${tier}p_ProRes.mov`,
-        });
-      }
-    }
-
-    res.json({
-      title: info.title,
-      thumbnail: info.thumbnail,
-      videoUrl: url,
-      qualities,
-    });
-  } catch (e) {
-    console.error(e);
-
-    res.status(500).json({
-      error: "Erro ao buscar vídeo: " + e.message,
-    });
-  }
-});
-
-// PREPARE DOWNLOAD
-app.post("/prepare", async (req, res) => {
+  const msg =
+    document.getElementById("cookies-save-msg");
 
   try {
 
-    const {
-      url,
-      height,
-      codec,
-      filename
-    } = req.body;
+    const r = await fetch("/cookies", {
 
-    if(!url){
+      method:"POST",
 
-      return res.status(400).json({
-        error:"URL inválida"
-      });
+      headers:{
+        "Content-Type":"application/json"
+      },
 
-    }
-
-    const id = String(Date.now());
-
-    const ext =
-      codec === "prores"
-      ? "mov"
-      : "mp4";
-
-    const output =
-      path.join(
-        os.tmpdir(),
-        `${id}.${ext}`
-      );
-
-    jobs[id] = {
-      status:"processing",
-      progress:5,
-      file:output,
-      filename
-    };
-
-    res.json({
-      jobId:id
-    });
-
-    const format =
-      `bestvideo[height<=${height}]+bestaudio/best`;
-
-    const ytdlpArgs = [
-      "-f",
-      format,
-      "--merge-output-format",
-      "mp4",
-      "-o",
-      output,
-      url
-    ];
-
-    if(hasCookies()){
-
-      ytdlpArgs.unshift(
-        COOKIES_FILE
-      );
-
-      ytdlpArgs.unshift(
-        "--cookies"
-      );
-
-    }
-
-    const dl = spawn(
-      ytdlpBin,
-      ytdlpArgs
-    );
-
-    dl.on("close", code => {
-
-      if(code !== 0){
-
-        jobs[id].status = "error";
-
-        jobs[id].message =
-          "Erro no download";
-
-        return;
-
-      }
-
-      jobs[id].status = "ready";
-
-      jobs[id].progress = 100;
+      body:JSON.stringify({
+        content
+      })
 
     });
+
+    const d = await r.json();
+
+    if(d.ok){
+
+      msg.style.color = "#00cc66";
+
+      msg.textContent =
+        "✓ Cookies salvos";
+
+      setCookiesTag(true);
+
+    } else {
+
+      msg.style.color = "#ff4444";
+
+      msg.textContent =
+        d.error;
+
+    }
 
   } catch(e){
 
-    res.status(500).json({
-      error:e.message
-    });
+    msg.style.color = "#ff4444";
+
+    msg.textContent =
+      "Erro";
 
   }
 
-});
+}
 
-// DOWNLOAD FILE
-app.get("/file", (req, res) => {
+async function buscar(){
 
-  const { id } = req.query;
+  const url =
+    document.getElementById("url")
+    .value
+    .trim();
 
-  const job = jobs[id];
+  const resultado =
+    document.getElementById("resultado");
 
-  if(
-    !job ||
-    job.status !== "ready"
-  ){
+  if(!url){
 
-    return res.status(404).json({
-      error:"Arquivo não encontrado"
-    });
+    resultado.innerHTML =
+      '<p class="erro">Cole um link válido.</p>';
+
+    return;
 
   }
 
-  res.download(
-    job.file,
-    job.filename
-  );
-
-});
-
-// STATUS
-app.get("/status", (req, res) => {
-  const job = jobs[req.query.id];
-
-  if (!job) {
-    return res.status(404).json({
-      error: "Job expirado ou não encontrado",
-    });
-  }
-
-  res.json({
-    status: job.status,
-    message: job.message,
-    progress: job.progress || 0,
-    eta: job.eta,
-  });
-});
-
-// HEALTH
-app.get("/health", (req, res) => {
-  res.json({
-    online: true,
-  });
-});
-
-// 404
-// PREPARE DOWNLOAD
-app.post("/prepare", async (req, res) => {
+  resultado.innerHTML =
+    '<p class="msg">Buscando vídeo...</p>';
 
   try {
 
-    const {
-      url,
-      height,
-      codec,
-      filename
-    } = req.body;
+    const req = await fetch("/video", {
 
-    if(!url){
+      method:"POST",
 
-      return res.status(400).json({
-        error:"URL inválida"
-      });
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        url
+      })
+
+    });
+
+    const data = await req.json();
+
+    if(data.error){
+
+      resultado.innerHTML =
+        `<p class="erro">${data.error}</p>`;
+
+      return;
 
     }
 
-    const id = String(Date.now());
+    let buttons = "";
 
-    const ext =
-      codec === "prores"
-      ? "mov"
-      : "mp4";
+    data.qualities.forEach(q => {
 
-    const output =
-      path.join(
-        os.tmpdir(),
-        `${id}.${ext}`
-      );
+      buttons += `
+      <button
+        class="btn-dl ${q.codec}"
+        onclick="baixar(
+          '${data.videoUrl}',
+          ${q.height},
+          '${q.codec}',
+          '${q.filename}'
+        )"
+      >
 
-    jobs[id] = {
-      status:"processing",
-      progress:100,
-      file:output,
-      filename
-    };
+        <span>
+          ${q.height}p ${q.codec.toUpperCase()}
+        </span>
 
-    res.json({
-      jobId:id
-    });
+        <span class="badge">
+          ${q.codec === 'prores' ? 'MOV' : 'MP4'}
+        </span>
 
-    const format =
-      `bestvideo[height<=${height}]+bestaudio/best`;
-
-    const args = [
-      "-f",
-      format,
-      "--merge-output-format",
-      "mp4",
-      "-o",
-      output,
-      url
-    ];
-
-    if(hasCookies()){
-
-      args.unshift(COOKIES_FILE);
-
-      args.unshift("--cookies");
-
-    }
-
-    const dl = spawn(
-      ytdlpBin,
-      args
-    );
-
-    dl.on("close", code => {
-
-      if(code !== 0){
-
-        jobs[id].status = "error";
-
-        jobs[id].message =
-          "Erro no download";
-
-        return;
-
-      }
-
-      jobs[id].status = "ready";
+      </button>
+      `;
 
     });
+
+    resultado.innerHTML = `
+      <div class="card">
+
+        <div class="thumb-wrap">
+          <img src="${data.thumbnail}">
+        </div>
+
+        <div class="card-body">
+
+          <p class="title">
+            ${data.title}
+          </p>
+
+          <div class="codec-info">
+            <strong>
+              Otimizado para After Effects
+            </strong>
+
+            H264 / ProRes
+          </div>
+
+          ${buttons}
+
+        </div>
+
+      </div>
+    `;
 
   } catch(e){
 
-    res.status(500).json({
-      error:e.message
-    });
+    resultado.innerHTML =
+      '<p class="erro">Erro de conexão.</p>';
 
   }
 
-});
+}
 
-// STATUS
-app.get("/status", (req, res) => {
+async function baixar(
+  url,
+  height,
+  codec,
+  filename
+){
 
-  const job = jobs[req.query.id];
+  document
+    .getElementById("modal")
+    .classList
+    .add("show");
 
-  if(!job){
+  try {
 
-    return res.status(404).json({
-      error:"Job não encontrado"
+    const r = await fetch("/prepare", {
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        url,
+        height,
+        codec,
+        filename
+      })
+
     });
+
+    const d = await r.json();
+
+    if(d.error){
+
+      alert(d.error);
+
+      return;
+
+    }
+
+    currentJobId = d.jobId;
+
+    pollStatus();
+
+  } catch(e){
+
+    alert("Erro no download");
 
   }
 
-  res.json(job);
+}
 
-});
+async function pollStatus(){
 
-// FILE
-app.get("/file", (req, res) => {
+  const status =
+    document.getElementById("modal-status");
 
-  const { id } = req.query;
+  const bar =
+    document.getElementById("modal-bar");
 
-  const job = jobs[id];
+  const interval = setInterval(async () => {
 
-  if(
-    !job ||
-    job.status !== "ready"
-  ){
+    const r =
+      await fetch(
+        `/status?id=${currentJobId}`
+      );
 
-    return res.status(404).json({
-      error:"Arquivo não encontrado"
-    });
+    const d = await r.json();
 
-  }
+    if(d.progress){
 
-  res.download(
-    job.file,
-    job.filename
-  );
+      bar.style.width =
+        d.progress + "%";
 
-});
-app.use((req, res) => {
-  res.status(404).json({
-    error: "Rota não encontrada",
-  });
-});
+    }
 
-const PORT = process.env.PORT || 3000;
+    status.textContent =
+      d.message || "Processando...";
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor online na porta ${PORT}`);
-});
+    if(d.status === "ready"){
+
+      clearInterval(interval);
+
+      window.location =
+        `/file?id=${currentJobId}`;
+
+      setTimeout(() => {
+
+        document
+          .getElementById("modal")
+          .classList
+          .remove("show");
+
+      }, 2000);
+
+    }
+
+    if(d.status === "error"){
+
+      clearInterval(interval);
+
+      alert(
+        d.message ||
+        "Erro"
+      );
+
+    }
+
+  }, 2000);
+
+}
+
+</script>
+
+</body>
+</html>
