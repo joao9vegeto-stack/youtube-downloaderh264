@@ -227,6 +227,43 @@ textarea{
 <input id="url" placeholder="Cole o link do YouTube">
 <button id="btn" onclick="buscar()">Buscar Vídeo</button>
 
+<!-- Cookies -->
+<div class="cookies-panel">
+
+  <div class="cookies-header" onclick="toggleCookies()">
+    <span>Cookies do YouTube</span>
+    <span id="cookies-tag" class="tag missing">
+      Não configurado
+    </span>
+  </div>
+
+  <div class="cookies-body" id="cookies-body">
+
+    <p>
+      O YouTube exige autenticação em servidores cloud.
+      Exporte seus cookies usando a extensão:
+      <br><br>
+      <a href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/gihmafigllmhbppdfjnfecimiohcljba"
+         target="_blank">
+         Get cookies.txt LOCALLY
+      </a>
+    </p>
+
+    <textarea
+      id="cookies-input"
+      placeholder="Cole aqui o conteúdo completo do cookies.txt"
+    ></textarea>
+
+    <button id="cookies-save-btn" onclick="saveCookies()">
+      Salvar Cookies
+    </button>
+
+    <div class="cookies-save-msg" id="cookies-save-msg"></div>
+
+  </div>
+
+</div>
+
 
 <div id="resultado"></div>
 
